@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mch-monitor",
+      "runtimeExecutable": "C:\\Program Files\\nodejs\\npm.cmd",
+      "runtimeArgs": ["start"],
+      "port": 3000,
+      "cwd": "C:\\Users\\leonard.carollo\\Downloads\\mch-monitor-fixed"
+    }
+  ]
+}

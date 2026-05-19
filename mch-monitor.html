@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MCH — DR Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap');
+:root {
+  --bg: #f4f3f0; --surface: #ffffff; --border: rgba(0,0,0,0.09); --border-strong: rgba(0,0,0,0.18);
+  --text-primary: #1a1917; --text-secondary: #6b6a65; --text-tertiary: #9d9c97;
+  --blue: #185FA5; --blue-bg: #e8f0fb; --blue-text: #0c3d72;
+  --green: #0F6E56; --green-bg: #e4f5ef; --green-text: #064d3b;
+  --amber: #b86800; --amber-bg: #fef3db; --amber-text: #7a4500;
+  --gray-mid: #888780; --radius-sm: 5px; --radius-md: 8px; --radius-lg: 12px;
+  --font: 'IBM Plex Sans', system-ui, sans-serif; --font-mono: 'IBM Plex Mono', monospace;
+  --panel-pad: 14px 16px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--bg); color: var(--text-primary); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+.app { min-height: 100vh; padding: 14px; display: flex; flex-direction: column; gap: 10px; max-width: 1400px; margin: 0 auto; }
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); gap: 12px; }
+.topbar-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.topbar-logo { width: 34px; height: 34px; background: var(--blue-bg); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; color: var(--blue); flex-shrink: 0; }
+.topbar-title { font-size: 14px; font-weight: 500; color: var(--text-primary); white-space: nowrap; }
+.topbar-sub { font-size: 11px; color: var(--text-secondary); margin-top: 1px; white-space: nowrap; }
+.topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.site-select { font-family: var(--font); font-size: 12px; color: var(--text-primary); background: var(--bg); border: 1px solid var(--border-strong); border-radius: var(--radius-md); padding: 6px 10px; cursor: pointer; max-width: 260px; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b6a65' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; padding-right: 28px; }
+.site-select:focus { outline: none; border-color: var(--blue); }
+.status-pill { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 99px; white-space: nowrap; }
+.status-pill--standby { background: var(--green-bg); color: var(--green-text); }
+.status-pill--active { background: var(--amber-bg); color: var(--amber-text); }
+.grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; gap: 10px; flex: 1; }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--panel-pad); display: flex; flex-direction: column; gap: 0; }
+.panel-header { display: flex; align-items: center; gap: 7px; padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.panel-icon { width: 15px; height: 15px; color: var(--text-secondary); flex-shrink: 0; }
+.panel-title { font-size: 10px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.07em; }
+.site-map { width: 100%; height: 150px; border-radius: var(--radius-md); overflow: hidden; background: #ddd; margin-bottom: 10px; position: relative; flex-shrink: 0; }
+.site-map iframe { width: 100%; height: 100%; border: none; display: block; }
+.map-notice { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.55); color: #fff; font-size: 10px; padding: 4px 8px; font-family: var(--font-mono); }
+.info-table { display: flex; flex-direction: column; }
+.info-row { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 0; border-bottom: 1px solid var(--border); gap: 12px; }
+.info-row:last-child { border-bottom: none; }
+.info-label { font-size: 11px; color: var(--text-secondary); white-space: nowrap; flex-shrink: 0; }
+.info-value { font-size: 11px; font-weight: 500; color: var(--text-primary); text-align: right; font-family: var(--font-mono); }
+.equipment-list { display: flex; flex-direction: column; flex: 1; }
+.eq-item { display: flex; align-items: flex-start; gap: 9px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.eq-item:last-child { border-bottom: none; }
+.eq-icon { width: 28px; height: 28px; background: var(--blue-bg); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--blue); }
+.eq-icon svg { width: 14px; height: 14px; }
+.eq-body { flex: 1; min-width: 0; }
+.eq-name { font-size: 12px; font-weight: 500; color: var(--text-primary); }
+.eq-detail { font-size: 11px; color: var(--text-secondary); margin-top: 1px; }
+.eq-kw { font-size: 11px; font-weight: 500; font-family: var(--font-mono); padding: 2px 8px; border-radius: 99px; background: var(--green-bg); color: var(--green-text); white-space: nowrap; align-self: center; flex-shrink: 0; }
+.eq-total { display: flex; justify-content: space-between; align-items: center; padding: 9px 0 6px; border-top: 1px solid var(--border); margin-top: 4px; }
+.eq-total-label { font-size: 11px; color: var(--text-secondary); }
+.eq-total-value { font-size: 14px; font-weight: 500; font-family: var(--font-mono); color: var(--text-primary); }
+.program-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.program-tag { font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 99px; background: var(--blue-bg); color: var(--blue-text); border: 1px solid rgba(24,95,165,0.15); }
+.program-tag--iso { background: var(--bg); color: var(--text-secondary); border-color: var(--border-strong); }
+.event-banner { display: flex; align-items: flex-start; gap: 7px; padding: 8px 10px; border-radius: var(--radius-md); margin-bottom: 10px; font-size: 11px; line-height: 1.5; }
+.event-banner--standby { background: var(--amber-bg); color: var(--amber-text); }
+.event-banner--active { background: #fde8e8; color: #7a1f1f; }
+.steps { display: flex; flex-direction: column; }
+.step { display: flex; gap: 10px; padding: 7px 0; }
+.step:not(:last-child) { border-bottom: 1px solid var(--border); }
+.step-num { width: 20px; height: 20px; border-radius: 50%; background: var(--bg); border: 1px solid var(--border-strong); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; color: var(--text-secondary); flex-shrink: 0; margin-top: 1px; font-family: var(--font-mono); }
+.step-num--active { background: var(--blue); border-color: var(--blue); color: #fff; }
+.step-body { flex: 1; }
+.step-title { font-size: 12px; font-weight: 500; color: var(--text-primary); }
+.step-desc { font-size: 11px; color: var(--text-secondary); margin-top: 2px; line-height: 1.5; }
+.metric-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; margin-bottom: 10px; }
+.metric-card { background: var(--bg); border-radius: var(--radius-md); padding: 9px 11px; }
+.metric-label { font-size: 10px; color: var(--text-secondary); margin-bottom: 3px; }
+.metric-value { font-size: 17px; font-weight: 500; color: var(--text-primary); font-family: var(--font-mono); line-height: 1.2; }
+.metric-value--success { color: var(--green); }
+.metric-value--warning { color: var(--amber); }
+.metric-unit { font-size: 11px; color: var(--text-secondary); font-weight: 400; }
+.chart-wrap { position: relative; width: 100%; height: 160px; margin-bottom: 7px; }
+.chart-legend { display: flex; gap: 14px; margin-bottom: 10px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-secondary); }
+.legend-swatch { width: 20px; height: 2px; border-radius: 2px; display: inline-block; }
+.legend-swatch--actual { background: #185FA5; }
+.legend-swatch--baseline { background: #888780; }
+.legend-swatch--target { background: #0F6E56; }
+.perf-footer { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+.perf-stat-label { font-size: 10px; color: var(--text-secondary); margin-bottom: 2px; }
+.perf-stat-value { font-size: 12px; font-weight: 500; color: var(--text-primary); font-family: var(--font-mono); }
+.perf-stat-value--success { color: var(--green); }
+@media (max-width: 800px) {
+  .grid { grid-template-columns: 1fr; }
+  .topbar { flex-wrap: wrap; }
+  .topbar-right { width: 100%; justify-content: flex-end; }
+}
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useMemo, useEffect, useRef } = React;
+
+    // ── data ──────────────────────────────────────────────────────────────────
+    const CUSTOMER = {
+      name: "Medical Center Health System",
+      shortName: "MCH",
+      city: "Odessa, TX",
+      iso: "ERCOT",
+      utility: "Oncor",
+      drPartner: "CPower / ERock",
+      programs: ["4CP", "ERS", "LMP", "EDR"],
+      status: "Closed",
+      closedDate: "Q4 2025",
+      operationalTarget: "Q4 2027",
+    };
+
+    const SITES = [
+      { id: "mch-main-1", name: "Main Hospital", address: "518 W 4th St", city: "Odessa", state: "TX", zip: "79761", meterId: "155155731LG", accountId: "10443720001646392", enrolledKw: 2400, lat: 31.845036, lng: -102.373681, mapZoom: 18, programs: ["4CP", "ERS", "LMP"], equipment: [{ name: "New backup generation", detail: "New gensets — 4CP, ERS, LMP eligible", kw: 4000, icon: "engine" }, { name: "BESS dispatch", detail: "Battery storage — discharge during event window", kw: 3082, icon: "battery" }] },
+      { id: "mch-main-2", name: "Main Hospital (annex)", address: "317 N Washington Ave", city: "Odessa", state: "TX", zip: "79761", meterId: "165178116LG", accountId: "10443720006421", enrolledKw: 968, lat: 31.846214, lng: -102.373804, mapZoom: 18, programs: ["4CP", "ERS", "LMP"], equipment: [{ name: "Facilities DM (BMS)", detail: "Building mgmt system — HVAC setpoint curtailment", kw: 333, icon: "dashboard" }] },
+      { id: "mch-wheatley", name: "Wheatley Stewart Pavilion", address: "500 W 5th St", city: "Odessa", state: "TX", zip: "79761", meterId: "182613848LG", accountId: "10443720007117", enrolledKw: 585, lat: 31.8462, lng: -102.373963, mapZoom: 18, programs: ["4CP", "ERS"], equipment: [{ name: "Facilities DM (BMS)", detail: "Building mgmt system — HVAC setpoint curtailment", kw: 333, icon: "dashboard" }] },
+      { id: "mch-wellness", name: "Center for Health & Wellness", address: "8050 E Hwy 191", city: "Odessa", state: "TX", zip: "79765", meterId: "182613759LG", accountId: "10443720009640", enrolledKw: 480, lat: 31.921723, lng: -102.288505, mapZoom: 17, programs: ["4CP", "ERS"], equipment: [{ name: "Facilities DM (BMS)", detail: "Building mgmt system — HVAC setpoint curtailment", kw: 333, icon: "dashboard" }] },
+      { id: "mch-women", name: "Medical Center for Women & Infants", address: "400 W 4th St", city: "Odessa", state: "TX", zip: "79761", meterId: "182611452LG", accountId: "10443720007690", enrolledKw: 242, lat: 31.845876, lng: -102.372535, mapZoom: 18, programs: ["4CP"], equipment: [{ name: "Facilities DM (BMS)", detail: "Building mgmt system — HVAC setpoint curtailment", kw: 242, icon: "dashboard" }] },
+      { id: "mch-cone", name: "Cone Professional Building", address: "318 N Allegheny Ave", city: "Odessa", state: "TX", zip: "79761", meterId: "111722491LG", accountId: "10443720001646392", enrolledKw: 915, lat: 31.844376, lng: -102.37344, mapZoom: 18, programs: ["ERS", "4CP"], equipment: [{ name: "HPCH program", detail: "High-performance curtailment — ERS & 4CP", kw: 246, icon: "zap" }] },
+    ];
+
+    const PORTFOLIO_EQUIPMENT = [
+      { name: "New backup generation", detail: "New gensets dispatched — 4CP, ERS, LMP eligible", kw: 4000, icon: "engine" },
+      { name: "BESS dispatch", detail: "Battery energy storage — discharge during event window", kw: 3082, icon: "battery" },
+      { name: "Facilities DM (BMS)", detail: "Building mgmt system — HVAC setpoint curtailment", kw: 333, icon: "dashboard" },
+      { name: "HPCH program (Cone bldg)", detail: "High-performance curtailment — ERS & 4CP", kw: 246, icon: "zap" },
+    ];
+
+    const generatePerfData = (baselineKw, targetKw) => {
+      const labels = [], baseline = [], target = [], actual = [];
+      const now = new Date();
+      now.setMinutes(Math.floor(now.getMinutes() / 15) * 15, 0, 0);
+      for (let i = -8; i <= 0; i++) {
+        const t = new Date(now.getTime() + i * 15 * 60000);
+        labels.push(t.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }));
+        baseline.push(baselineKw);
+        target.push(targetKw);
+        const progress = Math.max(0, (i + 8) / 6);
+        const curtailed = (baselineKw - targetKw) * Math.min(1, progress * 1.1);
+        actual.push(Math.round(baselineKw - curtailed + (Math.random() - 0.5) * baselineKw * 0.01));
+      }
+      return { labels, baseline, target, actual };
+    };
+
+    // ── icons ─────────────────────────────────────────────────────────────────
+    const ICONS = {
+      engine: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><rect x="2" y="7" width="20" height="10" rx="2"/><path d="M6 7V5m12 2V5M6 17v2m12-2v2M2 12h2m16 0h2"/></svg>,
+      battery: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><rect x="2" y="7" width="16" height="10" rx="2"/><path d="M22 11v2m-4-5v8M6 12h4"/></svg>,
+      dashboard: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><path d="M12 2a10 10 0 0 1 10 10"/><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="1"/></svg>,
+      zap: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>,
+    };
+
+    // ── SiteMap ───────────────────────────────────────────────────────────────
+    function SiteMap({ site }) {
+      const { lat, lng, name, mapZoom = 18 } = site;
+      const osmUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.002},${lat - 0.001},${lng + 0.002},${lat + 0.001}&layer=hot&marker=${lat},${lng}`;
+      return (
+        <div className="site-map">
+          <iframe key={site.id} src={osmUrl} title={`Map — ${name}`} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
+        </div>
+      );
+    }
+
+    // ── SitePanel ─────────────────────────────────────────────────────────────
+    function SitePanel({ site }) {
+      const rows = [
+        ["Address", `${site.address}, ${site.city}, ${site.state} ${site.zip}`],
+        ["Utility", "Oncor"],
+        ["ISO / market", "ERCOT"],
+        ["Meter ID", site.meterId],
+        ["DR program", "CPower — " + site.programs.join(", ")],
+        ["Enrolled capacity", site.enrolledKw.toLocaleString() + " kW"],
+        ["Coordinates", `${site.lat.toFixed(5)}, ${site.lng.toFixed(5)}`],
+      ];
+      return (
+        <div className="panel">
+          <div className="panel-header">
+            <svg className="panel-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+            <span className="panel-title">Site</span>
+          </div>
+          <SiteMap site={site} />
+          <div className="info-table">
+            {rows.map(([label, value]) => (
+              <div className="info-row" key={label}>
+                <span className="info-label">{label}</span>
+                <span className="info-value">{value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // ── EquipmentPanel ────────────────────────────────────────────────────────
+    function EquipmentPanel() {
+      const total = PORTFOLIO_EQUIPMENT.reduce((sum, e) => sum + e.kw, 0);
+      return (
+        <div className="panel">
+          <div className="panel-header">
+            <svg className="panel-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+            <span className="panel-title">Equipment &amp; expected output</span>
+          </div>
+          <div className="equipment-list">
+            {PORTFOLIO_EQUIPMENT.map((eq) => (
+              <div className="eq-item" key={eq.name}>
+                <div className="eq-icon">{ICONS[eq.icon]}</div>
+                <div className="eq-body">
+                  <div className="eq-name">{eq.name}</div>
+                  <div className="eq-detail">{eq.detail}</div>
+                </div>
+                <span className="eq-kw">{eq.kw.toLocaleString()} kW</span>
+              </div>
+            ))}
+          </div>
+          <div className="eq-total">
+            <span className="eq-total-label">Total committed capacity</span>
+            <span className="eq-total-value">~{total.toLocaleString()} kW</span>
+          </div>
+          <div className="program-tags">
+            {CUSTOMER.programs.map((p) => <span className="program-tag" key={p}>{p}</span>)}
+            <span className="program-tag program-tag--iso">ERCOT</span>
+          </div>
+        </div>
+      );
+    }
+
+    // ── ProgramPanel ──────────────────────────────────────────────────────────
+    const STEPS = [
+      { n: 1, title: "Receive event notification", desc: "CPower / ERock sends alert via portal and SMS. Confirm receipt within 30 min. Note event window and kW target per meter." },
+      { n: 2, title: "Pre-condition facilities", desc: "1–2 hrs before: lower BMS setpoints to pre-cool. Verify generator fuel levels and BESS state of charge." },
+      { n: 3, title: "Execute curtailment sequence", desc: "At event start: dispatch generators and BESS, initiate BMS curtailment sequence, dim non-clinical lighting." },
+      { n: 4, title: "Monitor per-meter performance", desc: "Track all 6 meters via Oncor AMI reads every 15 min. Flag any site below target to CPower hotline immediately." },
+      { n: 5, title: "Return to normal & document", desc: "Ramp down sequence at event end. Allow 20 min recovery. Submit post-event summary to ENFRA with meter reads and issues log." },
+    ];
+
+    function ProgramPanel({ eventActive = false }) {
+      return (
+        <div className="panel">
+          <div className="panel-header">
+            <svg className="panel-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6m-6 4h4"/></svg>
+            <span className="panel-title">Program — event response guide</span>
+          </div>
+          <div className={`event-banner ${eventActive ? "event-banner--active" : "event-banner--standby"}`}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: 1 }}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            {eventActive
+              ? "Event in progress — curtailment sequence active. Monitor all meters."
+              : "Standby — no active event. ERCOT 4CP warnings typically issued June–Sept via ERock."}
+          </div>
+          <div className="steps">
+            {STEPS.map((step) => (
+              <div className="step" key={step.n}>
+                <div className={`step-num ${eventActive && step.n === 3 ? "step-num--active" : ""}`}>{step.n}</div>
+                <div className="step-body">
+                  <div className="step-title">{step.title}</div>
+                  <div className="step-desc">{step.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // ── PerformancePanel ──────────────────────────────────────────────────────
+    const BASELINE_KW = 13200;
+    const TARGET_KW = 5540;
+
+    function PerformancePanel({ site }) {
+      const perf = useMemo(() => generatePerfData(BASELINE_KW, TARGET_KW), [site.id]);
+      const liveActual = perf.actual[perf.actual.length - 1];
+      const curtailed = Math.abs(liveActual - BASELINE_KW);
+      const aboveTarget = liveActual <= TARGET_KW;
+      const canvasRef = useRef(null);
+      const chartRef = useRef(null);
+
+      useEffect(() => {
+        if (!canvasRef.current) return;
+        if (chartRef.current) { chartRef.current.destroy(); }
+        chartRef.current = new Chart(canvasRef.current, {
+          type: "line",
+          data: {
+            labels: perf.labels,
+            datasets: [
+              { label: "Actual", data: perf.actual, borderColor: "#185FA5", backgroundColor: "rgba(24,95,165,0.07)", fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2 },
+              { label: "Baseline", data: perf.baseline, borderColor: "#888780", borderDash: [5, 4], fill: false, tension: 0, pointRadius: 0, borderWidth: 1.5 },
+              { label: "Target", data: perf.target, borderColor: "#0F6E56", borderDash: [3, 3], fill: false, tension: 0, pointRadius: 0, borderWidth: 1.5 },
+            ],
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { mode: "index", intersect: false } },
+            scales: {
+              x: { ticks: { font: { size: 10 }, color: "#888780", maxRotation: 0, autoSkip: true, maxTicksLimit: 6 }, grid: { display: false } },
+              y: { ticks: { font: { size: 10 }, color: "#888780", callback: (v) => Math.round(v / 1000) + "k kW" }, grid: { color: "rgba(136,135,128,0.1)" }, min: 4000, max: 15000 },
+            },
+          },
+        });
+        return () => { if (chartRef.current) chartRef.current.destroy(); };
+      }, [site.id]);
+
+      return (
+        <div className="panel">
+          <div className="panel-header">
+            <svg className="panel-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <span className="panel-title">Performance — real-time</span>
+          </div>
+          <div className="metric-row">
+            <div className="metric-card"><div className="metric-label">Live meter read</div><div className="metric-value">{liveActual.toLocaleString()} <span className="metric-unit">kW</span></div></div>
+            <div className="metric-card"><div className="metric-label">Baseline (expected)</div><div className="metric-value">{BASELINE_KW.toLocaleString()} <span className="metric-unit">kW</span></div></div>
+            <div className="metric-card"><div className="metric-label">Delta (curtailed)</div><div className={`metric-value ${aboveTarget ? "metric-value--success" : "metric-value--warning"}`}>−{curtailed.toLocaleString()} <span className="metric-unit">kW</span></div></div>
+          </div>
+          <div className="chart-wrap">
+            <canvas ref={canvasRef} />
+          </div>
+          <div className="chart-legend">
+            <span className="legend-item"><span className="legend-swatch legend-swatch--actual" />Actual</span>
+            <span className="legend-item"><span className="legend-swatch legend-swatch--baseline" />Baseline</span>
+            <span className="legend-item"><span className="legend-swatch legend-swatch--target" />Target</span>
+          </div>
+          <div className="perf-footer">
+            <div className="perf-stat"><div className="perf-stat-label">Program status</div><div className="perf-stat-value">{CUSTOMER.status} — {CUSTOMER.closedDate}</div></div>
+            <div className="perf-stat"><div className="perf-stat-label">Enrolled capacity</div><div className="perf-stat-value">~13,000 kW</div></div>
+            <div className="perf-stat"><div className="perf-stat-label">Operational target</div><div className="perf-stat-value perf-stat-value--success">{CUSTOMER.operationalTarget}</div></div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── App ───────────────────────────────────────────────────────────────────
+    function App() {
+      const [selectedSiteIdx, setSelectedSiteIdx] = useState(0);
+      const [eventActive] = useState(false);
+      const site = SITES[selectedSiteIdx];
+
+      return (
+        <div className="app">
+          <header className="topbar">
+            <div className="topbar-left">
+              <div className="topbar-logo">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              </div>
+              <div>
+                <div className="topbar-title">{CUSTOMER.name}</div>
+                <div className="topbar-sub">CPower DR program &nbsp;·&nbsp; {CUSTOMER.iso} / {CUSTOMER.utility} &nbsp;·&nbsp; {CUSTOMER.city}</div>
+              </div>
+            </div>
+            <div className="topbar-right">
+              <select className="site-select" value={selectedSiteIdx} onChange={(e) => setSelectedSiteIdx(Number(e.target.value))}>
+                {SITES.map((s, i) => <option key={s.id} value={i}>{s.name} — {s.address}</option>)}
+              </select>
+              <div className={`status-pill ${eventActive ? "status-pill--active" : "status-pill--standby"}`}>
+                <svg width="9" height="9" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="currentColor" /></svg>
+                {eventActive ? "Event active" : "No active event"}
+              </div>
+            </div>
+          </header>
+          <main className="grid">
+            <SitePanel site={site} />
+            <EquipmentPanel />
+            <ProgramPanel eventActive={eventActive} />
+            <PerformancePanel site={site} />
+          </main>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<React.StrictMode><App /></React.StrictMode>);
+  </script>
+</body>
+</html>
