@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/mch-monitor/static/css/main.c5553b6e.css",
+    "main.js": "/mch-monitor/static/js/main.6e57b3e5.js",
+    "index.html": "/mch-monitor/index.html",
+    "main.c5553b6e.css.map": "/mch-monitor/static/css/main.c5553b6e.css.map",
+    "main.6e57b3e5.js.map": "/mch-monitor/static/js/main.6e57b3e5.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.c5553b6e.css",
+    "static/js/main.6e57b3e5.js"
+  ]
+}
