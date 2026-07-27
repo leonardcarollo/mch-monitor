@@ -5,6 +5,7 @@ import EquipmentPanel from "./components/EquipmentPanel";
 import ProgramPanel from "./components/ProgramPanel";
 import PerformancePanel from "./components/PerformancePanel";
 import SitesView from "./components/SitesView";
+import SettlementsView from "./components/SettlementsView";
 import "./App.css";
 
 export default function App() {
@@ -38,6 +39,12 @@ export default function App() {
             Dashboard
           </button>
           <button
+            className={`tab-btn ${activeTab === "settlements" ? "tab-btn--active" : ""}`}
+            onClick={() => setActiveTab("settlements")}
+          >
+            Settlements
+          </button>
+          <button
             className={`tab-btn ${activeTab === "sites" ? "tab-btn--active" : ""}`}
             onClick={() => setActiveTab("sites")}
           >
@@ -69,16 +76,16 @@ export default function App() {
         </div>
       </header>
 
-      {activeTab === "dashboard" ? (
+      {activeTab === "dashboard" && (
         <main className="grid">
           <SitePanel site={site} />
           <ProgramPanel eventActive={eventActive} />
           <EquipmentPanel site={site} />
           <PerformancePanel site={site} />
         </main>
-      ) : (
-        <SitesView />
       )}
+      {activeTab === "settlements" && <SettlementsView />}
+      {activeTab === "sites" && <SitesView />}
     </div>
   );
 }
