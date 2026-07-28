@@ -201,6 +201,28 @@ body { font-family: var(--font); background: var(--bg); color: var(--text-primar
   .stmt-grid { grid-template-columns: 1fr; }
 }
 
+/* ── enrollment view ── */
+.enroll-view { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.enroll-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.enroll-dirty { font-size: 11px; font-weight: 500; color: #b85c00; }
+.enroll-saved { font-size: 11px; color: var(--green); }
+.enroll-btn { font-family: var(--font); font-size: 11px; font-weight: 500; padding: 4px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-primary); cursor: pointer; }
+.enroll-btn:hover:not(:disabled) { background: var(--surface-inset); }
+.enroll-btn:disabled { opacity: 0.4; cursor: default; }
+.enroll-btn--primary { background: #00B050; border-color: #00B050; color: #ffffff; }
+.enroll-btn--primary:hover:not(:disabled) { background: #009243; }
+.enroll-note { font-size: 11px; color: var(--text-secondary); padding: 0 0 10px; }
+.enroll-table { font-size: 11px; }
+.enroll-table th.ctr, .enroll-table td.ctr { text-align: center; }
+.enroll-table td { padding: 6px 6px 6px 2px; vertical-align: middle; }
+.enroll-site-name { font-size: 12px; font-weight: 500; color: var(--text-primary); }
+.enroll-site-addr { font-size: 10px; color: var(--text-secondary); font-family: var(--font-mono); }
+.enroll-input { font-family: var(--font-mono); font-size: 11px; color: var(--text-primary); background: var(--surface-inset); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 4px 7px; width: 120px; }
+.enroll-input--wide { width: 150px; }
+.enroll-input--num { width: 90px; text-align: right; }
+.enroll-input:focus { outline: none; border-color: #00B050; background: #ffffff; }
+.enroll-check { width: 14px; height: 14px; accent-color: #00B050; cursor: pointer; }
+
 /* ── responsive ── */
 @media (max-width: 800px) {
   .grid { grid-template-columns: 1fr; }

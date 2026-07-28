@@ -1,18 +1,27 @@
-import React, { useState } from "react";
-import { SITES, CUSTOMER } from "./data/sites";
+import React, { useMemo, useState } from "react";
+import { CUSTOMER } from "./data/sites";
+import { loadEnrollment, saveEnrollment, mergeSites } from "./data/enrollment";
 import SitePanel from "./components/SitePanel";
 import EquipmentPanel from "./components/EquipmentPanel";
 import ProgramPanel from "./components/ProgramPanel";
 import PerformancePanel from "./components/PerformancePanel";
 import SitesView from "./components/SitesView";
 import SettlementsView from "./components/SettlementsView";
+import EnrollmentView from "./components/EnrollmentView";
 import "./App.css";
 
 export default function App() {
   const [selectedSiteIdx, setSelectedSiteIdx] = useState(0);
   const [eventActive] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
-  const site = SITES[selectedSiteIdx];
+  const [enrollment, setEnrollment] = useState(loadEnrollment);
+  const sites = useMemo(() => mergeSites(enrollment), [enrollment]);
+  const site = sites[selectedSiteIdx];
+
+  const handleEnrollmentSave = (rows) => {
+    saveEnrollment(rows);
+    setEnrollment(rows);
+  };
 
   return (
     <div className="app">
@@ -45,6 +54,12 @@ export default function App() {
             Settlements
           </button>
           <button
+            className={`tab-btn ${activeTab === "enrollment" ? "tab-btn--active" : ""}`}
+            onClick={() => setActiveTab("enrollment")}
+          >
+            Enrollment
+          </button>
+          <button
             className={`tab-btn ${activeTab === "sites" ? "tab-btn--active" : ""}`}
             onClick={() => setActiveTab("sites")}
           >
@@ -59,7 +74,7 @@ export default function App() {
               value={selectedSiteIdx}
               onChange={(e) => setSelectedSiteIdx(Number(e.target.value))}
             >
-              {SITES.map((s, i) => (
+              {sites.map((s, i) => (
                 <option key={s.id} value={i}>
                   {s.name} — {s.address}
                 </option>
@@ -85,6 +100,9 @@ export default function App() {
         </main>
       )}
       {activeTab === "settlements" && <SettlementsView />}
+      {activeTab === "enrollment" && (
+        <EnrollmentView enrollment={enrollment} onSave={handleEnrollmentSave} />
+      )}
       {activeTab === "sites" && <SitesView />}
     </div>
   );
